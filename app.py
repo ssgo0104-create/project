@@ -10,7 +10,6 @@ import os
 # -----------------------------------------------------------------------------
 # 0. 파일 기준 동적 기본 경로(BASE_DIR) 및 폰트 설정
 # -----------------------------------------------------------------------------
-# 현재 실행 중인 app.py 파일이 있는 폴더를 자동으로 감지
 BASE_DIR = os.path.dirname(os.path.abspath(__file__))
 FONT_PATH = os.path.join(BASE_DIR, "Pretendard-Regular.otf")
 
@@ -129,15 +128,17 @@ trade_raw = load_data()
 st.sidebar.header("🔍 필터 옵션")
 
 all_countries = sorted(trade_raw['country_name'].unique().tolist())
+# 수정 1: 🌐국가 선택 (미선택 시 전체)
 selected_countries = st.sidebar.multiselect(
-    "국가 선택 (미선택 시 전체)",
+    "🌐국가 선택 (미선택 시 전체)",
     options=all_countries,
     default=[]
 )
 
 tier_options = ['소', '중', '대']
+# 수정 2: 💲무역액 등급 선택
 selected_tiers = st.sidebar.multiselect(
-    "무역액 등급 선택",
+    "💲무역액 등급 선택",
     options=tier_options,
     default=tier_options
 )
@@ -215,7 +216,8 @@ with col_chart1:
         st.info("데이터가 없습니다.")
 
 with col_chart2:
-    st.markdown("##### 📦 무역액 등급 분포")
+    # 수정 3: 💲무역액 등급 분포
+    st.markdown("##### 💲무역액 등급 분포")
     if not filtered_df.empty:
         fig2, ax2 = plt.subplots(figsize=(6, 5))
         tier_counts = filtered_df['무역액등급'].value_counts().reindex(tier_options, fill_value=0)
