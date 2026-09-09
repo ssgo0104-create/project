@@ -8,12 +8,12 @@ import base64
 import os
 
 # -----------------------------------------------------------------------------
-# 0. 파일 기준 동적 기본 경로(BASE_DIR) 및 폰트 설정
+# 0. 파일 기준 동적 기본 경로(BASE_DIR) 및 Pretendard 폰트 전체 적용
 # -----------------------------------------------------------------------------
 BASE_DIR = os.path.dirname(os.path.abspath(__file__))
 FONT_PATH = os.path.join(BASE_DIR, "Pretendard-Regular.otf")
 
-# 차트용 폰트 등록
+# 1) Matplotlib / Seaborn 차트에 로컬 Pretendard 폰트 등록 및 적용
 if os.path.exists(FONT_PATH):
     fm.fontManager.addfont(FONT_PATH)
     font_prop = fm.FontProperties(fname=FONT_PATH)
@@ -25,7 +25,7 @@ plt.rc('axes', unicode_minus=False)
 
 st.set_page_config(page_title="무역 분석 대시보드", layout="wide")
 
-# 아이콘 깨짐 방지 처리된 CSS 스타일링
+# 2) Streamlit 웹 UI 전체(지표, 테이블, 텍스트 일체)에 Pretendard 강제 주입
 if os.path.exists(FONT_PATH):
     with open(FONT_PATH, "rb") as f:
         font_data = base64.b64encode(f.read()).decode("utf-8")
@@ -38,12 +38,22 @@ if os.path.exists(FONT_PATH):
             font-style: normal;
         }}
         
-        /* 텍스트 요소에만 Pretendard 적용 */
-        html, body, p, span, div, h1, h2, h3, h4, h5, h6, label, input, button, select {{
+        /* 전체 기본 텍스트 및 레이아웃 */
+        html, body, [class*="css"], [class*="st-"] {{
             font-family: 'LocalPretendard', -apple-system, BlinkMacSystemFont, sans-serif !important;
         }}
 
-        /* Streamlit 기본 머티리얼 아이콘 폰트는 원래대로 복원 */
+        /* st.metric 지표 위젯 (숫자 및 라벨 캡션) */
+        [data-testid="stMetricValue"], [data-testid="stMetricLabel"] {{
+            font-family: 'LocalPretendard', sans-serif !important;
+        }}
+        
+        /* st.dataframe 및 데이터 테이블 내부 셀 폰트 */
+        .stDataFrame, [data-testid="stTable"], .dvn-scroller, div[role="grid"], .glideDataEditor {{
+            font-family: 'LocalPretendard', sans-serif !important;
+        }}
+
+        /* 사이드바 접기/펼치기 머티리얼 아이콘 폰트는 원래대로 복원 (깨짐 방지) */
         [data-testid="stIconMaterial"],
         .material-symbols-rounded,
         .material-symbols-outlined,
@@ -76,7 +86,7 @@ def load_data():
     trade_df.columns = trade_df.columns.str.strip().str.lower()
     country_df.columns = country_df.columns.str.strip().str.lower()
     
-    # 1) 국가 코드 매핑 사전
+    # 1) 국가 코드 매핑 사전 생성
     code_cols = [c for c in country_df.columns if any(k in c for k in ['code', 'num', 'iso', 'id', 'i'])]
     code_col = code_cols[0] if code_cols else country_df.columns[0]
     
@@ -93,7 +103,7 @@ def load_data():
         except (ValueError, TypeError):
             pass
 
-    # 2) 기준 국가 매핑
+    # 2) 기준 국가 매핑 (i가 한국 410 등으로 단일값이면 파트너국 j를 타깃으로 자동 전환)
     target_country_col = 'i'
     if 'i' in trade_df.columns:
         if trade_df['i'].nunique() == 1 and 'j' in trade_df.columns and trade_df['j'].nunique() > 1:
@@ -128,7 +138,6 @@ trade_raw = load_data()
 st.sidebar.header("🔍 필터 옵션")
 
 all_countries = sorted(trade_raw['country_name'].unique().tolist())
-# 수정 1: 🌐국가 선택 (미선택 시 전체)
 selected_countries = st.sidebar.multiselect(
     "🌐국가 선택 (미선택 시 전체)",
     options=all_countries,
@@ -136,13 +145,13 @@ selected_countries = st.sidebar.multiselect(
 )
 
 tier_options = ['소', '중', '대']
-# 수정 2: 💲무역액 등급 선택
 selected_tiers = st.sidebar.multiselect(
     "💲무역액 등급 선택",
     options=tier_options,
     default=tier_options
 )
 
+# 필터링 적용
 filtered_df = trade_raw.copy()
 
 if selected_countries:
@@ -185,7 +194,7 @@ with col_m2:
 
 st.markdown("---")
 
-# 4. 국가*연도 수출액 히트맵 & 무역액 등급 분포
+# 4. 국가*연도 수출액 히트맵(상위 8개국) & 무역액 등급 분포
 st.subheader("📈 수출 동향 및 무역액 등급 분석")
 col_chart1, col_chart2 = st.columns(2)
 
@@ -216,7 +225,6 @@ with col_chart1:
         st.info("데이터가 없습니다.")
 
 with col_chart2:
-    # 수정 3: 💲무역액 등급 분포
     st.markdown("##### 💲무역액 등급 분포")
     if not filtered_df.empty:
         fig2, ax2 = plt.subplots(figsize=(6, 5))
@@ -236,7 +244,7 @@ with col_chart2:
 
 st.markdown("---")
 
-# 5. 상위 5개국 * 무역액 등급 교차표
+# 5. 상위 5개국 * 무역액 등급 교차표 (원본건수 / 정규화비율)
 st.subheader("📑 상위 5개국 × 무역액 등급 교차 분석")
 
 if not filtered_df.empty:
