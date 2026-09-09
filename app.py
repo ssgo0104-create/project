@@ -8,9 +8,11 @@ import base64
 import os
 
 # -----------------------------------------------------------------------------
-# 0. 로컬 폰트 (Pretendard-Regular.otf) 설정
+# 0. 파일 기준 동적 기본 경로(BASE_DIR) 및 폰트 설정
 # -----------------------------------------------------------------------------
-FONT_PATH = r"C:\Users\user\Desktop\project\Pretendard-Regular.otf"
+# 현재 실행 중인 app.py 파일이 있는 폴더를 자동으로 감지
+BASE_DIR = os.path.dirname(os.path.abspath(__file__))
+FONT_PATH = os.path.join(BASE_DIR, "Pretendard-Regular.otf")
 
 # 차트용 폰트 등록
 if os.path.exists(FONT_PATH):
@@ -18,7 +20,7 @@ if os.path.exists(FONT_PATH):
     font_prop = fm.FontProperties(fname=FONT_PATH)
     plt.rc('font', family=font_prop.get_name())
 else:
-    plt.rc('font', family='Malgun Gothic')
+    plt.rc('font', family='sans-serif')
 
 plt.rc('axes', unicode_minus=False)
 
@@ -58,10 +60,10 @@ if os.path.exists(FONT_PATH):
 # -----------------------------------------------------------------------------
 @st.cache_data
 def load_data():
-    base_dir = r"C:\Users\user\Desktop\project"
-    trade_path = os.path.join(base_dir, "baci_85_sample.csv")
-    country_path = os.path.join(base_dir, "country_codes_sample.csv")
+    trade_path = os.path.join(BASE_DIR, "baci_85_sample.csv")
+    country_path = os.path.join(BASE_DIR, "country_codes_sample.csv")
     
+    # 인코딩 대응
     try:
         trade_df = pd.read_csv(trade_path, encoding='utf-8')
     except UnicodeDecodeError:
